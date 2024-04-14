@@ -1,4 +1,4 @@
-import msvcrt, os, random
+import msvcrt, os, random, rich
 
 
 class directs:
@@ -14,19 +14,22 @@ playerx = 1
 playery = 1
 players = 1
 playera = directs.right
-playerhm = 2010
+playerhm = 100
 playerh = playerhm
-playeratk = 500
+playeratk = 10
 swords = False
 enimielist = []
 lastfight = None
-level = 99
+level = 0
 gameover = False
 score = 0
 createdDoor = False
-flowerGrass = ["草", "草"]
+flowerTexture = "[magenta]花[/magenta]"
+grassTexture = "[green]草[/green]"
+flowerGrass = [flowerTexture] * 1 + [grassTexture] * 1
 mobCount = [5, 10]
-itemCount = [0, 1]
+itemCount = [10, 20]
+logs = ["", "", ""]
 
 
 def swordpos():
@@ -61,7 +64,9 @@ def pointdes(target, current):
 
 def progresslen(current, max, length=10):
     result = round(current / max * length)
-    return result * "=" + (length - result) * "-"
+    return (
+        "[green]" + result * "=" + "[/green][red]" + (length - result) * "=" + "[/red]"
+    )
 
 
 def badenimielen():
@@ -73,7 +78,7 @@ def badenimielen():
 
 
 def update():
-    global lastfight, playerx, playery, playerh, playerhm, score, createdDoor
+    global lastfight, playerx, playery, playerh, playerhm, score, createdDoor, logs
     if playerx < 1:
         playerx = 1
     if playerx > mapw:
@@ -101,6 +106,8 @@ def update():
             e2: enimie = enimielist[j]
             if e2.pos == e.pos and i != j:
                 e2.pos[0] += 1
+    while len(logs) > 3:
+        del logs[0]
     result = ""
     result += "*" * (mapw * 2 + 2)
     result += "\n"
@@ -110,10 +117,10 @@ def update():
             isblank = True
             swordp = swordpos()
             if pointdes([playerx, playery], [j, i]):
-                result += "我"
+                result += "[blue]我[/blue]"
                 isblank = False
             elif pointdes(swordp, [j, i]):
-                result += "剑"
+                result += "[yellow]剑[/yellow]"
                 isblank = False
             for ki in range(len(enimielist)):
                 k: enimie = enimielist[ki]
@@ -126,13 +133,16 @@ def update():
                         k.pos[1] -= 1
                     elif playera == directs.down:
                         k.pos[1] += 1
-                    k.health -= playeratk
+                    damage = playeratk + random.randint(-3, 3)
+                    k.health -= damage
+                    logs.append(f"[yellow]造成了{damage}点伤害！[/yellow]")
                     lastfight = k
                     if k.health <= 0:
                         del enimielist[ki]
                         k.onDie()
                         lastfight = None
                         score += k.atk
+                        logs.append(f"[green]获得了{k.atk}点积分！[/green]")
                         if badenimielen() == 0 and not createdDoor:
                             door = nextlevel()
                             createdDoor = True
@@ -151,10 +161,14 @@ def update():
     result += f"攻击 <{playeratk}>\n"
     result += f"等级 <{level}>\n"
     result += f"积分 <{score}>\n"
-    if lastfight is not None:
-        result += f"敌人 [ {progresslen(lastfight.health,lastfight.healthm)} ] <{lastfight.health}/{lastfight.healthm}>"
+    if lastfight is None:
+        result += "\n"
+    else:
+        result += f"敌人 [ {progresslen(lastfight.health,lastfight.healthm)} ] <{lastfight.health}/{lastfight.healthm}>\n"
+    for i in logs:
+        result += i + "\n"
     if gameover:
-        result += "\n游戏结束！"
+        result += "\n[red]游戏结束！[/red]"
     return result
 
 
@@ -234,6 +248,7 @@ class enimie:
                     self.atktime -= 1
                 else:
                     playerh -= self.atk
+                    logs.append(f"[red]受到了{self.atk}点伤害！[/red]")
                     self.atktime = 5
                 if playerh <= 0:
                     gameover = True
@@ -262,11 +277,13 @@ class nextlevel(enimie):
 class flowerOrGrass(enimie):
     def onDie(self):
         global playerhm, playerh, playeratk
-        if self.texture == "花":
+        if self.texture == flowerTexture:
             playerhm += 5
             playerh += 5
-        elif self.texture == "草":
+            logs.append(f"[green]生命上限提升5点！[/green]")
+        elif self.texture == grassTexture:
             playeratk += 2
+            logs.append(f"[yellow]攻击提升2点！[/yellow]")
 
     def ai(self):
         return
@@ -281,7 +298,7 @@ class flowerOrGrass(enimie):
 class fruit(enimie):
     def __init__(self):
         self.random()
-        self.texture = "果"
+        self.texture = "[red]果[/red]"
         self.healthm = 1
         self.health = 1
 
@@ -291,6 +308,7 @@ class fruit(enimie):
     def onDie(self):
         global playerh, playerhm
         playerh += playerhm * 0.05
+        logs.append(f"[green]回复了{playerhm*0.05}点生命！[/green]")
         playerh = int(playerh)
 
 
@@ -299,7 +317,7 @@ class tree(enimie):
 
     def __init__(self):
         self.random()
-        self.texture = "树"
+        self.texture = "[green]树[/green]"
         self.healthm = 100
         self.health = 100
 
@@ -320,7 +338,9 @@ def createEnimie():
     createdDoor = False
     enimielist = []
     level += 1
+    logs.append(f"[magenta]到达第{level}等级！[/magenta]")
     playerh += playerhm * 0.2
+    logs.append(f"[green]回复了{playerhm*0.2}点生命！[/green]")
     playerh = int(playerh)
     for i in range(random.randint(mobCount[0], mobCount[1])):
         e = enimie()
@@ -337,7 +357,7 @@ createEnimie()
 while True:
     renderdata = update()
     clearflush()
-    print(renderdata, end="\r")
+    rich.print(renderdata, end="\r")
     if gameover:
         while True:
             pass
