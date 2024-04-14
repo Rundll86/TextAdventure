@@ -14,16 +14,19 @@ playerx = 1
 playery = 1
 players = 1
 playera = directs.right
-playerhm = 100
+playerhm = 2010
 playerh = playerhm
-playeratk = 10
+playeratk = 500
 swords = False
 enimielist = []
 lastfight = None
-level = 0
+level = 99
 gameover = False
 score = 0
 createdDoor = False
+flowerGrass = ["草", "草"]
+mobCount = [5, 10]
+itemCount = [0, 1]
 
 
 def swordpos():
@@ -44,6 +47,9 @@ def swordpos():
 
 def clearflush():
     os.system("cls")
+
+
+clearflush()
 
 
 def pointdes(target, current):
@@ -123,10 +129,10 @@ def update():
                     k.health -= playeratk
                     lastfight = k
                     if k.health <= 0:
+                        del enimielist[ki]
                         k.onDie()
                         lastfight = None
                         score += k.atk
-                        del enimielist[ki]
                         if badenimielen() == 0 and not createdDoor:
                             door = nextlevel()
                             createdDoor = True
@@ -267,7 +273,7 @@ class flowerOrGrass(enimie):
 
     def __init__(self):
         self.random()
-        self.texture = "花" if random.randint(0, 1) else "草"
+        self.texture = random.choice(flowerGrass)
         self.healthm = 1
         self.health = 1
 
@@ -316,10 +322,11 @@ def createEnimie():
     level += 1
     playerh += playerhm * 0.2
     playerh = int(playerh)
-    for i in range(random.randint(5, 10)):
+    for i in range(random.randint(mobCount[0], mobCount[1])):
         e = enimie()
         e.random()
         enimielist.append(e)
+    for i in range(random.randint(itemCount[0], itemCount[1])):
         e = flowerOrGrass()
         enimielist.append(e)
     e = tree()
@@ -330,9 +337,9 @@ createEnimie()
 while True:
     renderdata = update()
     clearflush()
-    print(renderdata)
+    print(renderdata, end="\r")
     if gameover:
         while True:
             pass
-    keyinput = msvcrt.getch().decode()
+    keyinput = msvcrt.getch().decode("ascii")
     processInput(keyinput)
