@@ -8,6 +8,11 @@ class directs:
     down = "down"
 
 
+class weapons:
+    sword = "sword"
+    bow = "bow"
+
+
 mapw = 30
 maph = 30
 playerx = 1
@@ -17,6 +22,7 @@ playera = directs.right
 playerhm = 100
 playerh = playerhm
 playeratk = 10
+playerw = weapons.sword
 swords = False
 enimielist = []
 lastfight = None
@@ -27,9 +33,10 @@ createdDoor = False
 flowerTexture = "[magenta]花[/magenta]"
 grassTexture = "[green]草[/green]"
 flowerGrass = [flowerTexture] * 1 + [grassTexture] * 1
-mobCount = [5, 10]
-itemCount = [10, 20]
+mobCount = [1, 1]
+itemCount = [1, 1]
 logs = ["", "", ""]
+slowActionKey = "wsade12"
 
 
 def swordpos():
@@ -104,7 +111,7 @@ def update():
         e: enimie = enimielist[i]
         for j in range(len(enimielist)):
             e2: enimie = enimielist[j]
-            if e2.pos == e.pos and i != j:
+            if e2.pos == e.pos and i != j and type(e2) != arrow and type(e) != arrow:
                 e2.pos[0] += 1
     while len(logs) > 3:
         del logs[0]
@@ -120,34 +127,59 @@ def update():
                 result += "[blue]我[/blue]"
                 isblank = False
             elif pointdes(swordp, [j, i]):
-                result += "[yellow]剑[/yellow]"
+                result += f"[yellow]{'剑'if playerw==weapons.sword else '弓'}[/yellow]"
                 isblank = False
             for ki in range(len(enimielist)):
+                if ki >= len(enimielist):
+                    break
                 k: enimie = enimielist[ki]
-                if swordp == k.pos:
-                    if playera == directs.right:
-                        k.pos[0] += 1
-                    elif playera == directs.left:
-                        k.pos[0] -= 1
-                    elif playera == directs.up:
-                        k.pos[1] -= 1
-                    elif playera == directs.down:
-                        k.pos[1] += 1
-                    damage = playeratk + random.randint(-3, 3)
-                    k.health -= damage
-                    logs.append(f"[yellow]造成了{damage}点伤害！[/yellow]")
-                    lastfight = k
-                    if k.health <= 0:
-                        del enimielist[ki]
-                        k.onDie()
-                        lastfight = None
+                deletedA = False
+                if k.canDamage:
+                    hurt = False
+                    if swordp == k.pos and playerw == weapons.sword:
+                        if playera == directs.right:
+                            k.pos[0] += 1
+                        elif playera == directs.left:
+                            k.pos[0] -= 1
+                        elif playera == directs.up:
+                            k.pos[1] -= 1
+                        elif playera == directs.down:
+                            k.pos[1] += 1
+                        damage = playeratk + random.randint(-3, 3)
+                        hurt = True
+                    for al in range(len(enimielist)):
+                        a = enimielist[al]
+                        if type(a) == arrow and a.pos == k.pos:
+                            if a.direct == directs.right:
+                                k.pos[0] += 1
+                            elif a.direct == directs.left:
+                                k.pos[0] -= 1
+                            elif a.direct == directs.up:
+                                k.pos[1] -= 1
+                            elif a.direct == directs.down:
+                                k.pos[1] += 1
+                            damage = a.atk + random.randint(-3, 3)
+                            hurt = True
+                            del enimielist[al]
+                            break
+                    if hurt:
+                        k.health -= damage
+                        logs.append(f"[yellow]造成了{damage}点伤害！[/yellow]")
+                        lastfight = k
+                if k.health <= 0:
+                    if deletedA:
+                        ki -= 1
+                    del enimielist[ki]
+                    k.onDie()
+                    lastfight = None
+                    if k.haveScore:
                         score += k.atk
                         logs.append(f"[green]获得了{k.atk}点积分！[/green]")
-                        if badenimielen() == 0 and not createdDoor:
-                            door = nextlevel()
-                            createdDoor = True
-                            enimielist.append(door)
-                        break
+                    if badenimielen() == 0 and not createdDoor:
+                        door = nextlevel()
+                        createdDoor = True
+                        enimielist.append(door)
+                    break
                 if pointdes(k.pos, [j, i]):
                     result += k.texture
                     isblank = False
@@ -173,7 +205,7 @@ def update():
 
 
 def processInput(key):
-    global playerx, playery, playera, swords
+    global playerx, playery, playera, swords, playerw
     if key == "w":
         target = playery - players
         if len(enimielist) == 0:
@@ -211,7 +243,19 @@ def processInput(key):
                 playerx = target
         playera = directs.right
     elif key == "e":
-        swords = not swords
+        if playerw == weapons.sword:
+            swords = not swords
+        elif playerw == weapons.bow:
+            e = arrow()
+            e.pos = swordpos()
+            e.direct = playera
+            e.atk = playeratk + 1
+            enimielist.append(e)
+    elif key == "1":
+        playerw = weapons.sword
+    elif key == "2":
+        playerw = weapons.bow
+        swords = False
 
 
 def upOrDown(num):
@@ -230,6 +274,8 @@ class enimie:
     pos = []
     lastmoved = True
     atktime = 0
+    canDamage = False
+    haveScore = True
 
     def random(self):
         self.pos = [random.randint(1, mapw), random.randint(1, maph)]
@@ -262,10 +308,38 @@ class enimie:
         return
 
 
+class arrow(enimie):
+    texture = "[yellow]箭[/yellow]"
+    direct = None
+    lifetime = 10
+    haveScore = False
+
+    def __init__(self):
+        self.random()
+
+    def ai(self):
+        if self.direct == directs.up:
+            self.pos[1] -= 1
+        elif self.direct == directs.down:
+            self.pos[1] += 1
+        elif self.direct == directs.left:
+            self.pos[0] -= 1
+        elif self.direct == directs.right:
+            self.pos[0] += 1
+        self.atk -= 1
+        self.lifetime -= 1
+        if self.lifetime <= 0:
+            self.health = 0
+
+    def onDie(self):
+        self.atk = 0
+
+
 class nextlevel(enimie):
     pos = [2, 2]
     texture = "门"
     health = 1
+    canDamage = True
 
     def ai(self):
         return
@@ -275,6 +349,8 @@ class nextlevel(enimie):
 
 
 class flowerOrGrass(enimie):
+    canDamage = True
+
     def onDie(self):
         global playerhm, playerh, playeratk
         if self.texture == flowerTexture:
@@ -296,6 +372,8 @@ class flowerOrGrass(enimie):
 
 
 class fruit(enimie):
+    canDamage = True
+
     def __init__(self):
         self.random()
         self.texture = "[red]果[/red]"
@@ -314,6 +392,7 @@ class fruit(enimie):
 
 class tree(enimie):
     growtime = 0
+    canDamage = True
 
     def __init__(self):
         self.random()
@@ -345,6 +424,7 @@ def createEnimie():
     for i in range(random.randint(mobCount[0], mobCount[1])):
         e = enimie()
         e.random()
+        e.canDamage = True
         enimielist.append(e)
     for i in range(random.randint(itemCount[0], itemCount[1])):
         e = flowerOrGrass()
@@ -353,9 +433,10 @@ def createEnimie():
     enimielist.append(e)
 
 
+keyinput = ""
 createEnimie()
 while True:
-    renderdata = update()
+    renderdata = update() if keyinput in slowActionKey else renderdata
     clearflush()
     rich.print(renderdata, end="\r")
     if gameover:
