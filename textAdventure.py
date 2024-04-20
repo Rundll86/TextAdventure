@@ -20,13 +20,12 @@ playery = 1
 players = 1
 playera = directs.right
 playerhm = 100
-playerh = playerhm
 playeratk = 10
 playerw = weapons.sword
 swords = False
 enimielist = []
 lastfight = None
-level = 0
+level = 1000
 gameover = False
 score = 0
 createdDoor = False
@@ -37,6 +36,11 @@ mobCount = [5, 10]
 itemCount = [5, 10]
 logs = ["", "", ""]
 slowActionKey = "wsade12"
+flowerBoost = 5
+grassBoost = 2
+autoAtkMultiplier = 5
+autoHealthMultiplier = 5
+floatRate = 20
 
 
 def swordpos():
@@ -145,7 +149,7 @@ def update():
                             k.pos[1] -= 1
                         elif playera == directs.down:
                             k.pos[1] += 1
-                        damage = playeratk + random.randint(-3, 3)
+                        damage = playeratk
                         hurt = True
                     for al in range(len(enimielist)):
                         a = enimielist[al]
@@ -158,11 +162,16 @@ def update():
                                 k.pos[1] -= 1
                             elif a.direct == directs.down:
                                 k.pos[1] += 1
-                            damage = a.atk + random.randint(-3, 3)
+                            damage = a.atk
                             hurt = True
                             del enimielist[al]
                             break
                     if hurt:
+                        damage = round(
+                            damage
+                            * random.randint(100 - floatRate, 100 + floatRate)
+                            * 0.01
+                        )
                         k.health -= damage
                         logs.append(f"[yellow]造成了{damage}点伤害！[/yellow]")
                         lastfight = k
@@ -282,6 +291,7 @@ class enimie:
         self.healthm = random.randint(50 * level, 100 * level)
         self.health = self.healthm
         self.atk = random.randint(level, level * 2)
+        self.atktime = random.randint(0, 5)
 
     def ai(self):
         if self.lastmoved:
@@ -354,12 +364,12 @@ class flowerOrGrass(enimie):
     def onDie(self):
         global playerhm, playerh, playeratk
         if self.texture == flowerTexture:
-            playerhm += 5
-            playerh += 5
-            logs.append(f"[green]生命上限提升5点！[/green]")
+            playerhm += flowerBoost
+            playerh += flowerBoost
+            logs.append(f"[green]生命上限提升{flowerBoost}点！[/green]")
         elif self.texture == grassTexture:
-            playeratk += 2
-            logs.append(f"[yellow]攻击提升2点！[/yellow]")
+            playeratk += grassBoost
+            logs.append(f"[yellow]攻击提升{grassBoost}点！[/yellow]")
 
     def ai(self):
         return
@@ -433,6 +443,18 @@ def createEnimie():
     enimielist.append(e)
 
 
+for i in range(level):
+    playeratk += (
+        random.randint(round(itemCount[0] / 2), round(itemCount[1] / 2))
+        * grassBoost
+        * autoAtkMultiplier
+    )
+    playerhm += (
+        random.randint(round(itemCount[0] / 2), round(itemCount[1] / 2))
+        * flowerBoost
+        * autoHealthMultiplier
+    )
+playerh = playerhm
 keyinput = ""
 createEnimie()
 while True:
