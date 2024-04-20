@@ -1,1 +1,1 @@
-{"player": {"health": 0, "healthMax": 281, "atk": 65, "position": [24, 13], "angle": "left", "weapon": "bow"}, "system": {"score": 634, "logs": ["[red]受到了5点伤害！[/red]", "[red]受到了6点伤害！[/red]", "[red]受到了6点伤害！[/red]"], "level": 5}}
+{"player": {"health": 2454156, "healthMax": 2494712, "atk": 83701, "position": [30, 16], "angle": "right", "weapon": "bow"}, "system": {"score": 655899663, "logs": ["[green]获得了17844点积分！[/green]", "[red]受到了23015点伤害！[/red]", "[red]受到了17541点伤害！[/red]"], "level": 11905}}
