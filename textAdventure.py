@@ -33,8 +33,8 @@ createdDoor = False
 flowerTexture = "[magenta]花[/magenta]"
 grassTexture = "[green]草[/green]"
 flowerGrass = [flowerTexture] * 1 + [grassTexture] * 1
-mobCount = [1, 1]
-itemCount = [1, 1]
+mobCount = [5, 10]
+itemCount = [5, 10]
 logs = ["", "", ""]
 slowActionKey = "wsade12"
 
