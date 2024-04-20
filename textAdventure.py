@@ -13,34 +13,34 @@ class weapons:
     bow = "bow"
 
 
-mapw = 30
-maph = 30
-playerx = 1
-playery = 1
-players = 1
-playera = directs.right
-playerhm = 100
-playeratk = 10
-playerw = weapons.sword
-swords = False
-enimielist = []
-lastfight = None
-level = 1000
-gameover = False
-score = 0
-createdDoor = False
-flowerTexture = "[magenta]花[/magenta]"
-grassTexture = "[green]草[/green]"
-flowerGrass = [flowerTexture] * 1 + [grassTexture] * 1
-mobCount = [5, 10]
-itemCount = [5, 10]
-logs = ["", "", ""]
-slowActionKey = "wsade12"
-flowerBoost = 5
-grassBoost = 2
-autoAtkMultiplier = 5
-autoHealthMultiplier = 5
-floatRate = 20
+mapw = 30  # 地图长
+maph = 30  # 地图宽
+playerx = 1  # 玩家初始X坐标
+playery = 1  # 玩家初始Y坐标
+players = 1  # 玩家移动速度
+playera = directs.right  # 玩家方向
+playerhm = 100  # 玩家最大生命值
+playeratk = 10  # 玩家攻击力
+playerw = weapons.sword  # 玩家武器
+swords = False  # 如果武器为剑，剑的展开状态
+enimielist = []  # 实体列表
+lastfight = None  # 上次战斗敌怪
+level = 1000  # 等级
+gameover = False  # 游戏是否结束
+score = 0  # 分数
+createdDoor = False  # 门已创建
+flowerTexture = "[magenta]花[/magenta]"  # 花的贴图
+grassTexture = "[green]草[/green]"  # 草的贴图
+flowerGrass = [flowerTexture] * 1 + [grassTexture] * 1  # 花草占随机数组权重
+mobCount = [5, 10]  # 敌怪数量
+itemCount = [5, 10]  # 道具数量
+logs = ["", "", ""]  # 游玩日志，最多储存3条
+slowActionKey = "wsade12"  # 非快速行动的按键列表
+flowerBoost = 5  # 拾取花时提升量
+grassBoost = 2  # 拾取草时提升量
+autoAtkMultiplier = 5  # 自动等级数值时攻击力倍率
+autoHealthMultiplier = 5  # 自动等级数值时生命上限倍率
+floatRate = 20  # 伤害浮动区间
 
 
 def swordpos():
