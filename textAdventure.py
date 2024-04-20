@@ -404,7 +404,7 @@ class arrow(enimie):
     def __init__(self):
         self.random()
         self.offset = random.randint(-1, 1)
-        self.offsetStep = random.randint(1, 5)
+        self.offsetStep = random.randint(0, 10)
         self.offsetTime = self.offsetStep
 
     def ai(self):
