@@ -1,4 +1,4 @@
-import msvcrt, os, random, rich, colorama, json
+import msvcrt, os, random, rich, colorama, json, modLoader, importlib, math
 import rich.style
 import rich.text
 
@@ -37,7 +37,7 @@ playerw = weapons.sword  # 玩家武器
 swords = False  # 如果武器为剑，剑的展开状态
 enimielist = []  # 实体列表
 lastfight = None  # 上次战斗敌怪
-level = 1  # 等级
+level = 100  # 等级
 gameover = False  # 游戏是否结束
 score = 0  # 分数
 createdDoor = False  # 门已创建
@@ -55,6 +55,83 @@ autoAtkMultiplier = 1  # 自动等级时攻击力倍率
 autoHealthMultiplier = 1  # 自动等级时生命上限倍率
 autoScoreMultiplier = 1  # 自动等级时积分倍率
 floatRate = 20  # 伤害浮动区间
+autoPlay = True  # 自动战斗开关
+canSave = False  # 是否自动存档
+
+
+def playerAttack():
+    global swords
+    if playerw == weapons.sword:
+        swords = not swords
+    elif playerw == weapons.bow:
+        e = arrow()
+        e.pos = swordpos()
+        e.direct = playera
+        e.atk = playeratk + 1
+        enimielist.append(e)
+
+
+def autoPlayer():
+    global playerw, playera
+
+    def lineD(start, end):
+        return math.ceil(math.sqrt((end[0] - start[0]) ** 2 + (end[1] - start[1]) ** 2))
+
+    def closest(targetType):
+        lastD = lineD([playerx, playery], [mapw * 3, maph * 3])
+        result = None
+        for i in enimielist:
+            i: enimie
+            if type(i) == targetType and lineD([playerx, playery], i.pos) < lastD:
+                result = i
+        return result
+
+    def goto(pos):
+        global playerx, playery, playera
+        offsetpos = [pos[0] - playerx, pos[1] - playery]
+        if abs(offsetpos[0]) > abs(offsetpos[1]):
+            moved = upOrDown(offsetpos[0])
+            if moved == 1:
+                playera = directs.right
+            elif moved == -1:
+                playera = directs.left
+            playerx += moved
+        elif abs(offsetpos[0]) < abs(offsetpos[1]):
+            moved = upOrDown(offsetpos[1])
+            if moved == 1:
+                playera = directs.down
+            elif moved == -1:
+                playera = directs.up
+            playery += upOrDown(moved)
+        else:
+            moved = upOrDown(offsetpos[1])
+            if moved == 1:
+                playera = directs.down
+            elif moved == -1:
+                playera = directs.up
+            playery += upOrDown(moved)
+
+    def gotoAndAttack(pos):
+        global playera
+        d = directs.left if pos[0] + 3 <= mapw else directs.right
+        pos = pos.copy()
+        pos[0] += 3 if pos[0] + 3 <= mapw else -3
+        goto(pos)
+        if playerx == pos[0] and playery == pos[1]:
+            playera = d
+
+    playerw = weapons.bow
+    if playerh / playerhm < 0.7 and closest(fruit) is not None:
+        gotoAndAttack(closest(fruit).pos)
+    elif closest(flowerOrGrass) is not None:
+        gotoAndAttack(closest(flowerOrGrass).pos)
+    elif createdDoor:
+        gotoAndAttack(closest(nextlevel).pos)
+    elif closest(enimie) is not None:
+        pos = closest(enimie).pos.copy()
+        pos[0] += 5
+        gotoAndAttack(pos)
+    playerAttack()
 
 
 def updateSave():
@@ -164,7 +241,7 @@ def update():
         e: enimie = enimielist[i]
         for j in range(len(enimielist)):
             e2: enimie = enimielist[j]
-            if e2.pos == e.pos and i != j and type(e2) != arrow and type(e) != arrow:
+            if e2.pos == e.pos and i != j and type(e2) != arrow and type(e) != arrow and e2.canBePushed:
                 e2.pos[0] += 1
     while len(logs.content) > 3:
         logs.popFirst()
@@ -235,7 +312,10 @@ def update():
                 if k.health <= 0:
                     if deletedA:
                         ki -= 1
-                    del enimielist[ki]
+                    try:
+                        del enimielist[ki]
+                    except:
+                        continue
                     k.onDie()
                     lastfight = None
                     if k.haveScore:
@@ -282,7 +362,7 @@ def update():
         result += "[red]游戏结束！[/red]"
     else:
         result += "[yellow]WSAD移动，E攻击，数字1、2切换武器[/yellow]"
-    updateSave()
+    updateSave() if canSave else ""
     return result
 
 
@@ -325,14 +405,7 @@ def processInput(key):
                 playerx = target
         playera = directs.right
     elif key == "e":
-        if playerw == weapons.sword:
-            swords = not swords
-        elif playerw == weapons.bow:
-            e = arrow()
-            e.pos = swordpos()
-            e.direct = playera
-            e.atk = playeratk + 1
-            enimielist.append(e)
+        playerAttack()
     elif key == "1":
         playerw = weapons.sword
     elif key == "2":
@@ -384,7 +457,9 @@ class enimie:
                     gameover = True
             if abs(offsetpos[0]) > abs(offsetpos[1]):
                 self.pos[0] -= upOrDown(offsetpos[0])
-            if abs(offsetpos[0]) < abs(offsetpos[1]):
+            elif abs(offsetpos[0]) < abs(offsetpos[1]):
+                self.pos[1] -= upOrDown(offsetpos[1])
+            else:
                 self.pos[1] -= upOrDown(offsetpos[1])
             self.lastmoved = True
 
@@ -496,7 +571,6 @@ class fruit(enimie):
 
 class tree(enimie):
     growtime = 0
-    canDamage = True
     canBePushed = False
 
     def __init__(self):
@@ -514,7 +588,7 @@ class tree(enimie):
             f.pos[0] += random.choice([-1, 1])
             f.pos[1] += random.choice([-1, 0, 1])
             enimielist.append(f)
-            self.growtime = 30
+            self.growtime = 10
 
 
 def createEnimie():
@@ -561,6 +635,24 @@ createEnimie()
 canLog = True
 if os.path.exists("textAdventure.sv"):
     loadsave()
+if not os.path.exists("mods"):
+    os.mkdir("mods")
+modsImportPathes = []
+for root, _, files in os.walk("mods"):
+    for file in files:
+        if "__PYCACHE__" in root.upper():
+            continue
+        p: str = os.path.relpath(os.path.join(root, file), os.curdir)
+        if os.path.splitext(p)[1].upper().startswith(".PY"):
+            p = os.path.splitext(p)[0].replace("/", ".").replace("\\", ".")
+            modsImportPathes.append(p)
+for i in modsImportPathes:
+    try:
+        modData: modLoader.Mod = importlib.import_module(i).Export
+    except Exception as e:
+        print("加载Mod出错。", e)
+        while True:
+            pass
 while True:
     renderdata = update() if keyinput in slowActionKey else renderdata
     clearflush()
@@ -568,5 +660,11 @@ while True:
     if gameover:
         while True:
             pass
-    keyinput = msvcrt.getch().decode("ascii")
-    processInput(keyinput)
+    if autoPlay:
+        if False:
+            autoPlay = False
+        else:
+            autoPlayer()
+    else:
+        keyinput = msvcrt.getch().decode("ascii")
+        processInput(keyinput)

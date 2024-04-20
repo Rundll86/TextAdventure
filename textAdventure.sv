@@ -1,1 +1,0 @@
-{"player": {"health": 52, "healthMax": 55, "atk": 26, "position": [25, 19], "angle": "right", "weapon": "bow"}, "system": {"score": 84, "logs": ["[yellow]造成了4点伤害！[/yellow]", "[green]回复了2.75点生命！[/green]", "[green]获得了1点积分！[/green]"], "level": 1}}
