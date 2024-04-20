@@ -410,10 +410,10 @@ class arrow(enimie):
     def ai(self):
         num = 0
         if self.offsetTime > 0:
-            self.offsetTime -= 1
-        else:
             num = self.offset
             self.offsetTime = self.offsetStep
+        else:
+            self.offsetTime -= 1
         if self.direct == directs.up:
             self.pos[1] -= 1
             self.pos[0] += num
