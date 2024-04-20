@@ -31,13 +31,13 @@ playerx = 1  # 玩家初始X坐标
 playery = 1  # 玩家初始Y坐标
 players = 1  # 玩家移动速度
 playera = directs.right  # 玩家方向
-playerhm = 100  # 玩家最大生命值
+playerhm = 20  # 玩家最大生命值
 playeratk = 10  # 玩家攻击力
 playerw = weapons.sword  # 玩家武器
 swords = False  # 如果武器为剑，剑的展开状态
 enimielist = []  # 实体列表
 lastfight = None  # 上次战斗敌怪
-level = 1000  # 等级
+level = 1  # 等级
 gameover = False  # 游戏是否结束
 score = 0  # 分数
 createdDoor = False  # 门已创建
@@ -51,8 +51,8 @@ canLog = False  # 是否可记录游玩日志
 slowActionKey = "wsade12"  # 非快速行动的按键列表
 flowerBoost = 5  # 拾取花时提升量
 grassBoost = 2  # 拾取草时提升量
-autoAtkMultiplier = 100  # 自动等级时攻击力倍率
-autoHealthMultiplier = 0  # 自动等级时生命上限倍率
+autoAtkMultiplier = 1  # 自动等级时攻击力倍率
+autoHealthMultiplier = 1  # 自动等级时生命上限倍率
 autoScoreMultiplier = 1  # 自动等级时积分倍率
 floatRate = 20  # 伤害浮动区间
 
@@ -192,27 +192,29 @@ def update():
                 if k.canDamage:
                     hurt = False
                     if swordp == k.pos and playerw == weapons.sword:
-                        if playera == directs.right:
-                            k.pos[0] += 1
-                        elif playera == directs.left:
-                            k.pos[0] -= 1
-                        elif playera == directs.up:
-                            k.pos[1] -= 1
-                        elif playera == directs.down:
-                            k.pos[1] += 1
+                        if k.canBePushed:
+                            if playera == directs.right:
+                                k.pos[0] += 1
+                            elif playera == directs.left:
+                                k.pos[0] -= 1
+                            elif playera == directs.up:
+                                k.pos[1] -= 1
+                            elif playera == directs.down:
+                                k.pos[1] += 1
                         damage = playeratk
                         hurt = True
                     for al in range(len(enimielist)):
                         a = enimielist[al]
                         if type(a) == arrow and a.pos == k.pos:
-                            if a.direct == directs.right:
-                                k.pos[0] += 1
-                            elif a.direct == directs.left:
-                                k.pos[0] -= 1
-                            elif a.direct == directs.up:
-                                k.pos[1] -= 1
-                            elif a.direct == directs.down:
-                                k.pos[1] += 1
+                            if k.canBePushed:
+                                if a.direct == directs.right:
+                                    k.pos[0] += 1
+                                elif a.direct == directs.left:
+                                    k.pos[0] -= 1
+                                elif a.direct == directs.up:
+                                    k.pos[1] -= 1
+                                elif a.direct == directs.down:
+                                    k.pos[1] += 1
                             damage = a.atk
                             hurt = True
                             del enimielist[al]
@@ -355,6 +357,7 @@ class enimie:
     lastmoved = True
     atktime = 0
     canDamage = False
+    canBePushed = True
     haveScore = True
 
     def random(self):
@@ -394,19 +397,35 @@ class arrow(enimie):
     direct = None
     lifetime = 20
     haveScore = False
+    offset = 0
+    offsetStep = 0
+    offsetTime = 0
 
     def __init__(self):
         self.random()
+        self.offset = random.randint(-1, 1)
+        self.offsetStep = random.randint(1, 5)
+        self.offsetTime = self.offsetStep
 
     def ai(self):
+        num = 0
+        if self.offsetTime > 0:
+            self.offsetTime -= 1
+        else:
+            num = self.offset
+            self.offsetTime = self.offsetStep
         if self.direct == directs.up:
             self.pos[1] -= 1
+            self.pos[0] += num
         elif self.direct == directs.down:
             self.pos[1] += 1
+            self.pos[0] -= num
         elif self.direct == directs.left:
             self.pos[0] -= 1
+            self.pos[1] -= num
         elif self.direct == directs.right:
             self.pos[0] += 1
+            self.pos[1] += num
         self.atk *= (100 - 100 / self.lifetime) * 0.01
         self.atk = int(self.atk)
         self.lifetime -= 1
@@ -478,6 +497,7 @@ class fruit(enimie):
 class tree(enimie):
     growtime = 0
     canDamage = True
+    canBePushed = False
 
     def __init__(self):
         self.random()
@@ -518,7 +538,7 @@ def createEnimie():
     enimielist.append(e)
 
 
-for i in range(level):
+for i in range(level - 1):
     playeratk += (
         random.randint(round(itemCount[0] / 2), round(itemCount[1] / 2))
         * grassBoost

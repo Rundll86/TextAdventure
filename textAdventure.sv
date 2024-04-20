@@ -1,1 +1,0 @@
-{"player": {"health": 100, "healthMax": 100, "atk": 692812, "position": [12, 3], "angle": "up", "weapon": "bow"}, "system": {"score": 27499, "logs": ["[green]获得了1019点积分！[/green]", "[yellow]造成了487739点伤害！[/yellow]", "[green]获得了1135点积分！[/green]"], "level": 1001}}
