@@ -1,4 +1,5 @@
 import msvcrt, os, random, rich, colorama
+import rich.text
 
 
 class directs:
@@ -13,6 +14,16 @@ class weapons:
     bow = "bow"
 
 
+class logRecorder:
+    content = ["-", "-", "-"]
+
+    def append(self, cont, color):
+        self.content.append(f"[{color}]{cont}[/{color}]") if canLog else ""
+
+    def popFirst(self):
+        del self.content[0]
+
+
 mapw = 30  # 地图长
 maph = 30  # 地图宽
 playerx = 1  # 玩家初始X坐标
@@ -25,7 +36,7 @@ playerw = weapons.sword  # 玩家武器
 swords = False  # 如果武器为剑，剑的展开状态
 enimielist = []  # 实体列表
 lastfight = None  # 上次战斗敌怪
-level = 1000  # 等级
+level = 10000  # 等级
 gameover = False  # 游戏是否结束
 score = 0  # 分数
 createdDoor = False  # 门已创建
@@ -34,12 +45,14 @@ grassTexture = "[green]草[/green]"  # 草的贴图
 flowerGrass = [flowerTexture] * 1 + [grassTexture] * 1  # 花草占随机数组权重
 mobCount = [5, 10]  # 敌怪数量
 itemCount = [5, 10]  # 道具数量
-logs = ["", "", ""]  # 游玩日志，最多储存3条
+logs = logRecorder()  # 游玩日志，最多储存3条
+canLog = False  # 是否可记录游玩日志
 slowActionKey = "wsade12"  # 非快速行动的按键列表
 flowerBoost = 5  # 拾取花时提升量
 grassBoost = 2  # 拾取草时提升量
-autoAtkMultiplier = 5  # 自动等级数值时攻击力倍率
-autoHealthMultiplier = 5  # 自动等级数值时生命上限倍率
+autoAtkMultiplier = 1  # 自动等级时攻击力倍率
+autoHealthMultiplier = 1  # 自动等级时生命上限倍率
+autoScoreMultiplier = 1  # 自动等级时积分倍率
 floatRate = 20  # 伤害浮动区间
 
 
@@ -114,8 +127,8 @@ def update():
             e2: enimie = enimielist[j]
             if e2.pos == e.pos and i != j and type(e2) != arrow and type(e) != arrow:
                 e2.pos[0] += 1
-    while len(logs) > 3:
-        del logs[0]
+    while len(logs.content) > 3:
+        logs.popFirst()
     result = ""
     result += "*" * (mapw * 2 + 2)
     result += "\n"
@@ -127,9 +140,11 @@ def update():
             if pointdes([playerx, playery], [j, i]):
                 result += "[blue]我[/blue]"
                 isblank = False
+                continue
             elif pointdes(swordp, [j, i]):
                 result += f"[yellow]{'剑'if playerw==weapons.sword else '弓'}[/yellow]"
                 isblank = False
+                continue
             for ki in range(len(enimielist)):
                 if ki >= len(enimielist):
                     break
@@ -170,7 +185,11 @@ def update():
                             * 0.01
                         )
                         k.health -= damage
-                        logs.append(f"[yellow]造成了{damage}点伤害！[/yellow]")
+                        (
+                            logs.append(f"造成了{damage}点伤害！", "yellow")
+                            if canLog
+                            else ""
+                        )
                         lastfight = k
                 if k.health <= 0:
                     if deletedA:
@@ -180,15 +199,19 @@ def update():
                     lastfight = None
                     if k.haveScore:
                         score += k.atk
-                        logs.append(f"[green]获得了{k.atk}点积分！[/green]")
+                        (
+                            logs.append(f"获得了{k.atk}点积分！", "green")
+                            if canLog
+                            else ""
+                        )
                     if badenimielen() == 0 and not createdDoor:
                         door = nextlevel()
                         createdDoor = True
                         enimielist.append(door)
-                    break
                 if pointdes(k.pos, [j, i]):
                     result += k.texture
                     isblank = False
+                    continue
             if isblank:
                 result += "  "
         result += "*"
@@ -200,11 +223,11 @@ def update():
     result += f"等级 <{level}>\n"
     result += f"积分 <{score}>\n"
     if lastfight is None:
-        result += "\n"
+        result += "敌人 [ 无 ]\n"
     else:
         result += f"敌人 [ {progresslen(lastfight.health,lastfight.healthm)} ] <{lastfight.health}/{lastfight.healthm}>\n"
-    for i in logs:
-        result += i + "\n"
+    for i in range(3):
+        result += (logs.content[i] if len(logs.content) > i else "") + "\n"
     if gameover:
         result += "\n[red]游戏结束！[/red]"
     return result
@@ -301,7 +324,7 @@ class enimie:
                     self.atktime -= 1
                 else:
                     playerh -= self.atk
-                    logs.append(f"[red]受到了{self.atk}点伤害！[/red]")
+                    (logs.append(f"受到了{self.atk}点伤害！", "red") if canLog else "")
                     self.atktime = 5
                 if playerh <= 0:
                     gameover = True
@@ -318,7 +341,7 @@ class enimie:
 class arrow(enimie):
     texture = "[yellow]箭[/yellow]"
     direct = None
-    lifetime = 10
+    lifetime = 20
     haveScore = False
 
     def __init__(self):
@@ -333,7 +356,8 @@ class arrow(enimie):
             self.pos[0] -= 1
         elif self.direct == directs.right:
             self.pos[0] += 1
-        self.atk -= 1
+        self.atk *= (100 - 100 / self.lifetime) * 0.01
+        self.atk = int(self.atk)
         self.lifetime -= 1
         if self.lifetime <= 0:
             self.health = 0
@@ -363,10 +387,10 @@ class flowerOrGrass(enimie):
         if self.texture == flowerTexture:
             playerhm += flowerBoost
             playerh += flowerBoost
-            logs.append(f"[green]生命上限提升{flowerBoost}点！[/green]")
+            (logs.append(f"生命上限提升{flowerBoost}点！", "green") if canLog else "")
         elif self.texture == grassTexture:
             playeratk += grassBoost
-            logs.append(f"[yellow]攻击提升{grassBoost}点！[/yellow]")
+            logs.append(f"攻击提升{grassBoost}点！", "yellow")
 
     def ai(self):
         return
@@ -393,7 +417,7 @@ class fruit(enimie):
     def onDie(self):
         global playerh, playerhm
         playerh += playerhm * 0.05
-        logs.append(f"[green]回复了{playerhm*0.05}点生命！[/green]")
+        logs.append(f"回复了{playerhm*0.05}点生命！", "green")
         playerh = int(playerh)
 
 
@@ -424,9 +448,9 @@ def createEnimie():
     createdDoor = False
     enimielist = []
     level += 1
-    logs.append(f"[magenta]到达第{level}等级！[/magenta]")
+    logs.append(f"到达第{level}等级！", "magenta")
     playerh += playerhm * 0.2
-    logs.append(f"[green]回复了{playerhm*0.2}点生命！[/green]")
+    logs.append(f"回复了{playerhm*0.2}点生命！", "green")
     playerh = int(playerh)
     for i in range(random.randint(mobCount[0], mobCount[1])):
         e = enimie()
@@ -451,10 +475,13 @@ for i in range(level):
         * flowerBoost
         * autoHealthMultiplier
     )
+    score += random.randint(round(level), round(level * 2)) * autoHealthMultiplier
 playerh = playerhm
 keyinput = ""
+level -= 1
 colorama.init(autoreset=True)
 createEnimie()
+canLog = True
 while True:
     renderdata = update() if keyinput in slowActionKey else renderdata
     clearflush()
