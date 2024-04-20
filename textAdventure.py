@@ -1,4 +1,4 @@
-import msvcrt, os, random, rich
+import msvcrt, os, random, rich, colorama
 
 
 class directs:
@@ -61,9 +61,6 @@ def swordpos():
 
 def clearflush():
     os.system("cls")
-
-
-clearflush()
 
 
 def pointdes(target, current):
@@ -456,6 +453,7 @@ for i in range(level):
     )
 playerh = playerhm
 keyinput = ""
+colorama.init(autoreset=True)
 createEnimie()
 while True:
     renderdata = update() if keyinput in slowActionKey else renderdata
