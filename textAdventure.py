@@ -1,4 +1,5 @@
-import msvcrt, os, random, rich, colorama
+import msvcrt, os, random, rich, colorama, json
+import rich.style
 import rich.text
 
 
@@ -54,6 +55,11 @@ autoAtkMultiplier = 1  # 自动等级时攻击力倍率
 autoHealthMultiplier = 1  # 自动等级时生命上限倍率
 autoScoreMultiplier = 1  # 自动等级时积分倍率
 floatRate = 20  # 伤害浮动区间
+
+
+def updateSave():
+    file = open("textAdventure.sv", "w", encoding="utf8")
+    pass
 
 
 def swordpos():
@@ -221,15 +227,26 @@ def update():
     result += f"生命 [ {progresslen(playerh,playerhm)} ] <{playerh}/{playerhm}>\n"
     result += f"攻击 <{playeratk}>\n"
     result += f"等级 <{level}>\n"
+    weapontext = rich.text.Text()
+    usingw = rich.style.Style(color="black", bgcolor="white")
+    unusingw = rich.style.Style(color="white", bgcolor=None)
+    weapontext.append("武器 [ ")
+    weapontext.append("近战", style=usingw if playerw == weapons.sword else unusingw)
+    weapontext.append(" ")
+    weapontext.append("远程", style=usingw if playerw == weapons.bow else unusingw)
+    weapontext.append(" ]\n")
+    result += weapontext.markup
     result += f"积分 <{score}>\n"
     if lastfight is None:
-        result += "敌人 [ 无 ]\n"
+        result += "敌人 [ 未进入战斗 ]\n"
     else:
         result += f"敌人 [ {progresslen(lastfight.health,lastfight.healthm)} ] <{lastfight.health}/{lastfight.healthm}>\n"
     for i in range(3):
         result += (logs.content[i] if len(logs.content) > i else "") + "\n"
     if gameover:
-        result += "\n[red]游戏结束！[/red]"
+        result += "[red]游戏结束！[/red]"
+    else:
+        result += "[yellow]WSAD移动，E攻击，数字1、2切换武器[/yellow]"
     return result
 
 
