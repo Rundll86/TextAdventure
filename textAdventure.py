@@ -37,7 +37,7 @@ playerw = weapons.sword  # 玩家武器
 swords = False  # 如果武器为剑，剑的展开状态
 enimielist = []  # 实体列表
 lastfight = None  # 上次战斗敌怪
-level = 100  # 等级
+level = 1  # 等级
 gameover = False  # 游戏是否结束
 score = 0  # 分数
 createdDoor = False  # 门已创建
@@ -48,15 +48,16 @@ mobCount = [5, 10]  # 敌怪数量
 itemCount = [5, 10]  # 道具数量
 logs = logRecorder()  # 游玩日志，最多储存3条
 canLog = False  # 是否可记录游玩日志
-slowActionKey = "wsade12"  # 非快速行动的按键列表
-flowerBoost = 5  # 拾取花时提升量
+slowActionKey = "wsadeo12"  # 非快速行动的按键列表
+flowerBoost = 20  # 拾取花时提升量
 grassBoost = 2  # 拾取草时提升量
 autoAtkMultiplier = 1  # 自动等级时攻击力倍率
 autoHealthMultiplier = 1  # 自动等级时生命上限倍率
 autoScoreMultiplier = 1  # 自动等级时积分倍率
 floatRate = 20  # 伤害浮动区间
-autoPlay = True  # 自动战斗开关
-canSave = False  # 是否自动存档
+autoPlay = False  # 自动战斗开关
+canSave = True  # 是否自动存档
+aiAtkTime = True
 
 
 def playerAttack():
@@ -65,14 +66,15 @@ def playerAttack():
         swords = not swords
     elif playerw == weapons.bow:
         e = arrow()
-        e.pos = swordpos()
+        e.pos = [playerx, playery]
         e.direct = playera
         e.atk = playeratk + 1
+        e.ai()
         enimielist.append(e)
 
 
 def autoPlayer():
-    global playerw, playera
+    global playerw, playera, aiAtkTime
 
     def lineD(start, end):
         return math.ceil(math.sqrt((end[0] - start[0]) ** 2 + (end[1] - start[1]) ** 2))
@@ -121,17 +123,30 @@ def autoPlayer():
             playera = d
 
     playerw = weapons.bow
-    if playerh / playerhm < 0.7 and closest(fruit) is not None:
-        gotoAndAttack(closest(fruit).pos)
+    if playerh / playerhm < 0.7:
+        if closest(fruit) is not None:
+            gotoAndAttack(closest(fruit).pos)
+        else:
+            try:
+                pos = closest(enimie).pos.copy()
+                pos[0] += random.choice([-10, 10])
+                pos[1] += random.choice([-10, 10])
+                "" if createdDoor else goto(pos)
+            except:
+                pass
     elif closest(flowerOrGrass) is not None:
         gotoAndAttack(closest(flowerOrGrass).pos)
     elif createdDoor:
-        gotoAndAttack(closest(nextlevel).pos)
+        try:
+            gotoAndAttack(closest(nextlevel).pos)
+        except:
+            pass
     elif closest(enimie) is not None:
         pos = closest(enimie).pos.copy()
         pos[0] += 5
         gotoAndAttack(pos)
-    playerAttack()
+    playerAttack() if aiAtkTime else ""
+    aiAtkTime = not aiAtkTime
 
 
 def updateSave():
@@ -241,7 +256,13 @@ def update():
         e: enimie = enimielist[i]
         for j in range(len(enimielist)):
             e2: enimie = enimielist[j]
-            if e2.pos == e.pos and i != j and type(e2) != arrow and type(e) != arrow and e2.canBePushed:
+            if (
+                e2.pos == e.pos
+                and i != j
+                and type(e2) != arrow
+                and type(e) != arrow
+                and e2.canBePushed
+            ):
                 e2.pos[0] += 1
     while len(logs.content) > 3:
         logs.popFirst()
@@ -358,10 +379,15 @@ def update():
         result += f"敌人 [ {progresslen(lastfight.health,lastfight.healthm)} ] <{lastfight.health}/{lastfight.healthm}>\n"
     for i in range(3):
         result += (logs.content[i] if len(logs.content) > i else "") + "\n"
-    if gameover:
-        result += "[red]游戏结束！[/red]"
+    if autoPlay:
+        result += "[magenta][AI] 自动战斗运行中[/magenta]\n"
     else:
-        result += "[yellow]WSAD移动，E攻击，数字1、2切换武器[/yellow]"
+        result += "\n"
+    if gameover:
+        os.system("del /s /q textAdventure.sv")
+        result += "[red]游戏结束！\n旧存档已删除。[/red]"
+    else:
+        result += "[yellow]WSAD移动，O键启/禁用自动战斗AI，E键攻击，数字键1、2切换武器[/yellow]"
     updateSave() if canSave else ""
     return result
 
@@ -531,7 +557,9 @@ class flowerOrGrass(enimie):
     canDamage = True
 
     def onDie(self):
-        global playerhm, playerh, playeratk
+        global playerhm, playerh, playeratk, flowerBoost, grassBoost
+        flowerBoost = random.randint(10, 20)
+        grassBoost = random.randint(2, 5)
         if self.texture == flowerTexture:
             playerhm += flowerBoost
             playerh += flowerBoost
@@ -575,6 +603,10 @@ class tree(enimie):
 
     def __init__(self):
         self.random()
+        """self.pos = [
+            random.randint(round(mapw / 2 - 5), math.ceil(mapw / 2 + 5)),
+            random.randint(round(maph / 2 - 5), math.ceil(maph / 2 + 5)),
+        ]"""
         self.texture = "[green]树[/green]"
         self.healthm = 100
         self.health = 100
@@ -588,7 +620,7 @@ class tree(enimie):
             f.pos[0] += random.choice([-1, 1])
             f.pos[1] += random.choice([-1, 0, 1])
             enimielist.append(f)
-            self.growtime = 10
+            self.growtime = 30
 
 
 def createEnimie():
@@ -661,10 +693,10 @@ while True:
         while True:
             pass
     if autoPlay:
-        if False:
-            autoPlay = False
-        else:
-            autoPlayer()
+        autoPlayer()
     else:
         keyinput = msvcrt.getch().decode("ascii")
+        if keyinput == "o":
+            autoPlay = True
+            continue
         processInput(keyinput)

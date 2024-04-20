@@ -1,0 +1,1 @@
+{"player": {"health": 0, "healthMax": 281, "atk": 65, "position": [24, 13], "angle": "left", "weapon": "bow"}, "system": {"score": 634, "logs": ["[red]受到了5点伤害！[/red]", "[red]受到了6点伤害！[/red]", "[red]受到了6点伤害！[/red]"], "level": 5}}
