@@ -37,7 +37,7 @@ playerw = weapons.sword  # 玩家武器
 swords = False  # 如果武器为剑，剑的展开状态
 enimielist = []  # 实体列表
 lastfight = None  # 上次战斗敌怪
-level = 1  # 等级
+level = 1000  # 等级
 gameover = False  # 游戏是否结束
 score = 0  # 分数
 createdDoor = False  # 门已创建
@@ -51,8 +51,8 @@ canLog = False  # 是否可记录游玩日志
 slowActionKey = "wsade12"  # 非快速行动的按键列表
 flowerBoost = 5  # 拾取花时提升量
 grassBoost = 2  # 拾取草时提升量
-autoAtkMultiplier = 1  # 自动等级时攻击力倍率
-autoHealthMultiplier = 1  # 自动等级时生命上限倍率
+autoAtkMultiplier = 100  # 自动等级时攻击力倍率
+autoHealthMultiplier = 0  # 自动等级时生命上限倍率
 autoScoreMultiplier = 1  # 自动等级时积分倍率
 floatRate = 20  # 伤害浮动区间
 
@@ -429,6 +429,9 @@ class nextlevel(enimie):
     def onDie(self):
         createEnimie()
 
+    def __init__(self):
+        self.pos = [2, 2]
+
 
 class flowerOrGrass(enimie):
     canDamage = True
@@ -527,6 +530,9 @@ for i in range(level):
         * autoHealthMultiplier
     )
     score += random.randint(round(level), round(level * 2)) * autoHealthMultiplier
+playeratk = int(playeratk)
+playerhm = int(playerhm)
+score = int(score)
 playerh = playerhm
 keyinput = ""
 level -= 1
