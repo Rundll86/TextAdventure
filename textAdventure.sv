@@ -1,0 +1,1 @@
+{"player": {"health": 110, "healthMax": 110, "atk": 20, "position": [22, 27], "angle": "right", "weapon": "bow"}, "system": {"score": 2, "logs": ["-", "-", "-"], "level": 1}}

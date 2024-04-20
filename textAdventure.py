@@ -37,7 +37,7 @@ playerw = weapons.sword  # 玩家武器
 swords = False  # 如果武器为剑，剑的展开状态
 enimielist = []  # 实体列表
 lastfight = None  # 上次战斗敌怪
-level = 10000  # 等级
+level = 1  # 等级
 gameover = False  # 游戏是否结束
 score = 0  # 分数
 createdDoor = False  # 门已创建
@@ -58,8 +58,41 @@ floatRate = 20  # 伤害浮动区间
 
 
 def updateSave():
-    file = open("textAdventure.sv", "w", encoding="utf8")
-    pass
+    savedata = {
+        "player": {
+            "health": playerh,
+            "healthMax": playerhm,
+            "atk": playeratk,
+            "position": [playerx, playery],
+            "angle": playera,
+            "weapon": playerw,
+        },
+        "system": {
+            "score": score,
+            "logs": logs.content,
+            "level": level,
+        },
+    }
+    json.dump(
+        savedata, open("textAdventure.sv", "w", encoding="utf8"), ensure_ascii=False
+    )
+    return savedata
+
+
+def loadsave():
+    global playerh, playerhm, playeratk, playerx, playery, playera, playerw, score, level
+    savedata = json.load(open("textAdventure.sv", encoding="utf8"))
+    playerh = savedata["player"]["health"]
+    playerhm = savedata["player"]["healthMax"]
+    playeratk = savedata["player"]["atk"]
+    playerx = savedata["player"]["position"][0]
+    playery = savedata["player"]["position"][1]
+    playera = savedata["player"]["angle"]
+    playerw = savedata["player"]["weapon"]
+    score = savedata["system"]["score"]
+    logs.content = savedata["system"]["logs"]
+    level = savedata["system"]["level"]
+    return savedata
 
 
 def swordpos():
@@ -247,6 +280,7 @@ def update():
         result += "[red]游戏结束！[/red]"
     else:
         result += "[yellow]WSAD移动，E攻击，数字1、2切换武器[/yellow]"
+    updateSave()
     return result
 
 
@@ -499,6 +533,8 @@ level -= 1
 colorama.init(autoreset=True)
 createEnimie()
 canLog = True
+if os.path.exists("textAdventure.sv"):
+    loadsave()
 while True:
     renderdata = update() if keyinput in slowActionKey else renderdata
     clearflush()
