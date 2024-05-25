@@ -1,1 +1,0 @@
-{"player": {"health": -331, "healthMax": 1390175, "atk": 138724, "position": [30, 6], "angle": "right", "weapon": "bow"}, "system": {"score": 619215597, "logs": ["[red]受到了23524点伤害！[/red]", "[red]受到了35696点伤害！[/red]", "[red]受到了23524点伤害！[/red]"], "level": 19857}}

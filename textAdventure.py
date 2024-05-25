@@ -1,6 +1,5 @@
 import msvcrt, os, random, rich, colorama, json, modLoader, importlib, math
-import rich.style
-import rich.text
+from rich import text, style, live
 
 
 class directs:
@@ -37,7 +36,7 @@ playerw = weapons.sword  # 玩家武器
 swords = False  # 如果武器为剑，剑的展开状态
 enimielist = []  # 实体列表
 lastfight = None  # 上次战斗敌怪
-level = 19823  # 等级
+level = 10  # 等级
 gameover = False  # 游戏是否结束
 score = 0  # 分数
 createdDoor = False  # 门已创建
@@ -57,7 +56,7 @@ autoScoreMultiplier = 1  # 自动等级时积分倍率
 floatRate = 20  # 伤害浮动区间
 autoPlay = False  # 自动战斗开关
 canSave = True  # 是否自动存档
-aiAtkTime = True
+aiAtkTime = True  # AI自动战斗时攻击倒计时
 
 
 def playerAttack():
@@ -363,9 +362,9 @@ def update():
     result += f"生命 [ {progresslen(playerh,playerhm)} ] <{playerh}/{playerhm}>\n"
     result += f"攻击 <{playeratk}>\n"
     result += f"等级 <{level}>\n"
-    weapontext = rich.text.Text()
-    usingw = rich.style.Style(color="black", bgcolor="white")
-    unusingw = rich.style.Style(color="white", bgcolor=None)
+    weapontext = text.Text()
+    usingw = style.Style(color="black", bgcolor="white")
+    unusingw = style.Style(color="white", bgcolor=None)
     weapontext.append("武器 [ ")
     weapontext.append("近战", style=usingw if playerw == weapons.sword else unusingw)
     weapontext.append(" ")
@@ -527,7 +526,7 @@ class arrow(enimie):
         elif self.direct == directs.right:
             self.pos[0] += 1
             self.pos[1] += num
-        self.atk *= (100 - 100 / self.lifetime) * 0.01
+        self.atk *= 0.8
         self.atk = int(self.atk)
         self.lifetime -= 1
         if self.lifetime <= 0:
@@ -644,59 +643,66 @@ def createEnimie():
     enimielist.append(e)
 
 
-for i in range(level - 1):
-    playeratk += (
-        random.randint(round(itemCount[0] / 2), round(itemCount[1] / 2))
-        * grassBoost
-        * autoAtkMultiplier
-    )
-    playerhm += (
-        random.randint(round(itemCount[0] / 2), round(itemCount[1] / 2))
-        * flowerBoost
-        * autoHealthMultiplier
-    )
-    score += random.randint(round(level), round(level * 2)) * autoHealthMultiplier
-playeratk = int(playeratk)
-playerhm = int(playerhm)
-score = int(score)
-playerh = playerhm
-keyinput = ""
-level -= 1
-colorama.init(autoreset=True)
-createEnimie()
-canLog = True
-if os.path.exists("textAdventure.sv"):
-    loadsave()
-if not os.path.exists("mods"):
-    os.mkdir("mods")
-modsImportPathes = []
-for root, _, files in os.walk("mods"):
-    for file in files:
-        if "__PYCACHE__" in root.upper():
-            continue
-        p: str = os.path.relpath(os.path.join(root, file), os.curdir)
-        if os.path.splitext(p)[1].upper().startswith(".PY"):
-            p = os.path.splitext(p)[0].replace("/", ".").replace("\\", ".")
-            modsImportPathes.append(p)
-for i in modsImportPathes:
-    try:
-        modData: modLoader.Mod = importlib.import_module(i).Export
-    except Exception as e:
-        print("加载Mod出错。", e)
-        while True:
-            pass
-while True:
-    renderdata = update() if keyinput in slowActionKey else renderdata
-    clearflush()
-    rich.print(renderdata, end="\r")
-    if gameover:
-        while True:
-            pass
-    if autoPlay:
-        autoPlayer()
-    else:
-        keyinput = msvcrt.getch().decode("ascii")
-        if keyinput == "o":
-            autoPlay = True
-            continue
-        processInput(keyinput)
+if True:
+    for i in range(level - 1):
+        playeratk += (
+            random.randint(round(itemCount[0] / 2), round(itemCount[1] / 2))
+            * grassBoost
+            * autoAtkMultiplier
+        )
+        playerhm += (
+            random.randint(round(itemCount[0] / 2), round(itemCount[1] / 2))
+            * flowerBoost
+            * autoHealthMultiplier
+        )
+        score += random.randint(round(level), round(level * 2)) * autoHealthMultiplier
+    playeratk = int(playeratk)
+    playerhm = int(playerhm)
+    score = int(score)
+    playerh = playerhm
+    keyinput = ""
+    level -= 1
+    colorama.init(autoreset=True)
+    createEnimie()
+    canLog = True
+    if os.path.exists("textAdventure.sv"):
+        loadsave()
+    """if not os.path.exists("mods"):
+        os.mkdir("mods")
+    modsImportPathes = []
+    for root, _, files in os.walk("mods"):
+        for file in files:
+            if "__PYCACHE__" in root.upper():
+                continue
+            p: str = os.path.relpath(os.path.join(root, file), os.curdir)
+            if os.path.splitext(p)[1].upper().startswith(".PY"):
+                p = os.path.splitext(p)[0].replace("/", ".").replace("\\", ".")
+                modsImportPathes.append(p)
+    for i in modsImportPathes:
+        try:
+            modData: modLoader.Mod = importlib.import_module(i).Export
+        except Exception as e:
+            print("加载Mod出错。", e)
+            while True:
+                pass"""
+    renderer = live.Live()
+    lastlength = 0
+    while True:
+        renderdata = update() if keyinput in slowActionKey else renderdata
+        if len(renderdata) < lastlength:
+            renderdata = renderdata.ljust(lastlength)
+        if len(renderdata) > lastlength:
+            lastlength = len(renderdata)
+        clearflush()
+        rich.print(renderdata)
+        if gameover:
+            while True:
+                pass
+        if autoPlay:
+            autoPlayer()
+        else:
+            keyinput = msvcrt.getch().decode("ascii")
+            if keyinput == "o":
+                autoPlay = True
+                continue
+            processInput(keyinput)
